@@ -26,6 +26,7 @@ public class PaymentConfig {
     @ConditionalOnProperty
             (name = "app.payment.paypal.enabled", havingValue = "true")
     public PaypalService paypalService() {
+        System.out.println("PayPal Service Bean Created");
         return new PaypalServiceImpl();
     }
 
