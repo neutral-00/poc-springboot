@@ -1,113 +1,173 @@
-# 1.2.2 Access Beans in the Application Context
+# 1.2.3 Handle multiple Configuration files
 
 ### Project Metadata
 - Repository: [https://github.com/neutral-00/poc-springboot](https://github.com/neutral-00/poc-springboot)
-- **Parent Branch:** `1.2.1-define-beans-using-java-code`
-- **Branch:** `1.2.2-access-beans-in-application-context`
+- **Parent Branch:** `1.2.2-access-beans-in-application-context`
+- **Branch:** `1.2.3-handle-multiple-configuration-files`
 
 ### Learning Objectives
-- [ ] Access Beans in the Application Context (`getBean()` + `@Autowired`)
+- [ ] Handle multiple Configuration files (`@Import`, `@ComponentScan`, `@Configuration` hierarchy)
 
-**Scenario:** Access our notification beans from **1.2.1** using **3 methods**: `ApplicationContext.getBean()`, `@Autowired` constructor injection, and `@Autowired` field injection.
+**Scenario:** Split notification config into **separate modules** (EmailConfig, SmsConfig, SlackConfig). Learn **3 ways** to combine multiple `@Configuration` classes.
 
-## Step 1: Bean Consumer (CommandLineRunner)
+## Step 1: Create Modular Configuration Files
 
 ```java
-// com.lousing.poc.BeanDemoRunner.java (NEW FILE)
+// com.lousing.poc.config.EmailConfig.java (NEW)
+package com.lousing.poc.config;
+
+import com.lousing.poc.service.EmailNotificationService;
+import com.lousing.poc.service.NotificationService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration  // Module 1: Email only
+public class EmailConfig {
+    @Bean
+    public NotificationService emailNotificationService() {
+        return new EmailNotificationService();
+    }
+}
+```
+
+```java
+// com.lousing.poc.config.SmsConfig.java (NEW)
+package com.lousing.poc.config;
+
+import com.lousing.poc.service.NotificationService;
+import com.lousing.poc.service.SmsNotificationService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration  // Module 2: SMS only
+public class SmsConfig {
+    @Bean
+    public NotificationService smsNotificationService() {
+        return new SmsNotificationService();
+    }
+}
+```
+
+```java
+// com.lousing.poc.config.SlackConfig.java (NEW)
+package com.lousing.poc.config;
+
+import com.lousing.poc.service.NotificationService;
+import com.lousing.poc.service.SlackNotificationService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration  // Module 3: Slack only
+public class SlackConfig {
+    @Bean
+    public NotificationService slackNotificationService() {
+        return new SlackNotificationService();
+    }
+}
+```
+
+```java
+// com.lousing.poc.service.SlackNotificationService.java (NEW)
+package com.lousing.poc.service;
+
+public class SlackNotificationService implements NotificationService {
+    @Override
+    public void send(String message, String recipient) {
+        System.out.println("💬 Slack to #" + recipient + ": " + message);
+    }
+}
+```
+
+## Step 2: Master Configuration (Combines All Modules)
+
+```java
+// com.lousing.poc.config.NotificationMasterConfig.java (NEW)
+package com.lousing.poc.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+@Configuration
+@Import({EmailConfig.class, SmsConfig.class, SlackConfig.class})  // ✅ Method 1: @Import
+public class NotificationMasterConfig {
+    // All 3 configs imported here
+}
+```
+
+## Step 3: Updated Demo Runner
+
+```java
+// com.lousing.poc.MultiConfigDemoRunner.java (NEW - Replaces BeanDemoRunner)
 package com.lousing.poc;
 
 import com.lousing.poc.service.NotificationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-@Component  // Spring will create & wire this bean automatically
-public class BeanDemoRunner implements CommandLineRunner {
+@Component
+public class MultiConfigDemoRunner implements CommandLineRunner {
     
     private final ApplicationContext context;
-    private final NotificationService emailService;
-    private final NotificationService smsService;
     
-    // 1️⃣ Constructor Injection (PREFERRED)
-    public BeanDemoRunner(
-        ApplicationContext context,
-        @Qualifier("emailNotificationService") NotificationService emailService,
-        @Qualifier("smsNotificationService") NotificationService smsService
-    ) {
+    public MultiConfigDemoRunner(ApplicationContext context) {
         this.context = context;
-        this.emailService = emailService;
-        this.smsService = smsService;
     }
     
     @Override
     public void run(String... args) {
-        System.out.println("\n🚀 === ACCESSING BEANS ===");
+        System.out.println("\n🚀 === MULTIPLE CONFIG FILES ===");
         
-        // METHOD 1: ApplicationContext.getBean() - Programmatic
-        demoGetBean();
+        // Demo all 3 beans from 3 different config files
+        demoAllNotificationServices();
+        demoBeanCount();
         
-        // METHOD 2: Constructor Injection (already wired above)
-        demoConstructorInjection();
-        
-        // METHOD 3: Field Injection (alternative - less preferred)
-        demoFieldInjection();
-        
-        System.out.println("✅ All bean access methods working!");
+        System.out.println("✅ Multiple configs working!");
         System.out.println("----------------------------------");
     }
     
-    private void demoGetBean() {
-        System.out.println("\n1️⃣ ApplicationContext.getBean():");
+    private void demoAllNotificationServices() {
+        System.out.println("\n📋 Beans from 3 config files:");
         
-        // By TYPE (ambiguous - multiple NotificationService beans)
-        // NotificationService any = context.getBean(NotificationService.class);
+        NotificationService email = context.getBean("emailNotificationService", NotificationService.class);
+        email.send("Email config test", "dev@company.com");
         
-        // By NAME (method name from 1.2.1)
-        NotificationService emailByName = context.getBean("emailNotificationService", NotificationService.class);
-        emailByName.send("Manual lookup test", "dev@company.com");
+        NotificationService sms = context.getBean("smsNotificationService", NotificationService.class);
+        sms.send("SMS config test", "+1234567890");
         
-        // By CLASS (exact implementation)
-        EmailNotificationService emailImpl = context.getBean(EmailNotificationService.class);
-        emailImpl.send("By class lookup", "admin@company.com");
+        NotificationService slack = context.getBean("slackNotificationService", NotificationService.class);
+        slack.send("Slack config test", "dev-channel");
     }
     
-    private void demoConstructorInjection() {
-        System.out.println("\n2️⃣ Constructor Injection:");
-        emailService.send("Constructor injected", "user1@example.com");
-        smsService.send("Constructor injected", "+1234567890");
+    private void demoBeanCount() {
+        String[] beanNames = context.getBeanDefinitionNames();
+        long notificationBeans = java.util.Arrays.stream(beanNames)
+            .filter(name -> name.contains("NotificationService"))
+            .count();
+        
+        System.out.println("\n📊 Total NotificationService beans: " + notificationBeans);
     }
-    
-    private void demoFieldInjection() {
-        System.out.println("\n3️⃣ Field Injection:");
-        testField.send("Field injected", "test@example.com");
-    }
-    
-    // 3️⃣ Field Injection example (@Autowired on field)
-    @Autowired
-    @Qualifier("smsNotificationService")
-    private NotificationService testField;
 }
 ```
 
-## Step 2: Updated Main Application
+## Step 4: Updated Main Application
 
 ```java
 // com.lousing.poc.PocSpringbootApplication.java (UPDATED)
 package com.lousing.poc;
 
-import com.lousing.poc.config.NotificationConfig;
+import com.lousing.poc.config.NotificationMasterConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
-@Import(NotificationConfig.class)
+@Import(NotificationMasterConfig.class)  // ✅ Single import loads ALL configs
 public class PocSpringbootApplication {
     public static void main(String[] args) {
         SpringApplication.run(PocSpringbootApplication.class, args);
-        System.out.println("✅ Beans configured via Java Config!");
+        System.out.println("✅ Multiple Config Files Loaded!");
         System.out.println("----------------------------------");
     }
 }
@@ -120,68 +180,63 @@ mvn spring-boot:run
 ```
 
 ```
-✅ Beans configured via Java Config!
+✅ Multiple Config Files Loaded!
 ----------------------------------
 
-🚀 === ACCESSING BEANS ===
-1️⃣ ApplicationContext.getBean():
-📧 Email to dev@company.com: Manual lookup test
-📧 Email to admin@company.com: By class lookup
+🚀 === MULTIPLE CONFIG FILES ===
+📋 Beans from 3 config files:
+📧 Email to dev@company.com: Email config test
+📱 SMS to +1234567890: SMS config test
+💬 Slack to #dev-channel: Slack config test
 
-2️⃣ Constructor Injection:
-📧 Email to user1@example.com: Constructor injected
-📱 SMS to +1234567890: Constructor injected
+📊 Total NotificationService beans: 3
 
-3️⃣ Field Injection:
-📱 SMS to test@example.com: Field injected
-
-✅ All bean access methods working!
+✅ Multiple configs working!
 ----------------------------------
 ```
 
-## 3 Ways to Access Beans (Comparison)
+## 3 Ways to Handle Multiple Configs
 
-| Method | Code | Pros | Cons |
-|--------|------|------|------|
-| **getBean()** | `context.getBean("name", Type.class)` | Programmatic, runtime lookup | Verbose, error-prone |
-| **Constructor** | `public Class(Dependency dep)` | **Immutable, testable, preferred** | More constructor params |
-| **Field @Autowired** | `@Autowired Dependency dep;` | Simple | Mutable, harder to test |
+| Method | Code | Use Case |
+|--------|------|----------|
+| **@Import** | `@Import({Config1.class, Config2.class})` | **Recommended** - Explicit |
+| **@ComponentScan** | `@ComponentScan("com.lousing.poc.config")` | Auto-discover `@Configuration` |
+| **XML** | `<import resource="sms-config.xml"/>` | Legacy |
 
 ## Key Learning Points
 
 ```
-✅ ApplicationContext.getBean():
-   ├── getBean("beanName", Type.class)  ← By name (method name)
-   ├── getBean(Type.class)              ← By type (ambiguous → fails)
-   └── getBean(ImplClass.class)         ← Exact implementation
-
-✅ Constructor injection = @Qualifier for multiple beans
-✅ Field injection = @Autowired + @Qualifier
-✅ Spring auto-creates @Component BeanDemoRunner & wires it!
+✅ Modular configs = One concern per file
+✅ @Import cascades: NotificationMasterConfig → EmailConfig + SmsConfig + SlackConfig
+✅ Bean names preserved: "emailNotificationService", "smsNotificationService", etc.
+✅ Spring merges ALL configs into single ApplicationContext
 ```
 
-## File Structure (Branch 1.2.2)
+## File Structure (Branch 1.2.3)
 
 ```
-1.2.2-access-beans-in-application-context/  (inherits from 1.2.1)
+1.2.3-handle-multiple-configuration-files/  (inherits from 1.2.2)
 ├── src/main/java/com/lousing/poc/
-│   ├── PocSpringbootApplication.java      # Updated main
-│   ├── BeanDemoRunner.java               # NEW - Bean access
-│   ├── service/                          # From 1.2.1
-│   └── config/                           # From 1.2.1
-└── pom.xml
+│   ├── PocSpringbootApplication.java          # @Import MasterConfig
+│   ├── MultiConfigDemoRunner.java            # NEW - Tests all configs
+│   ├── service/
+│   │   └── SlackNotificationService.java     # NEW
+│   └── config/
+│       ├── NotificationMasterConfig.java     # NEW - @Import all
+│       ├── EmailConfig.java                  # NEW
+│       ├── SmsConfig.java                    # NEW  
+│       └── SlackConfig.java                  # NEW
 ```
 
 ## Verification Checklist
 
 **✅ Complete when:**
-- [ ] `BeanDemoRunner` demonstrates **all 3 access methods**
-- [ ] `mvn spring-boot:run` shows **email + SMS output**
-- [ ] Constructor injection uses `@Qualifier`
-- [ ] Field injection uses `@Autowired`
-- [ ] `getBean("emailNotificationService")` works
-- [ ] **No changes** to `NotificationConfig` from 1.2.1
+- [ ] **4 new config files** + **Slack service** created
+- [ ] `mvn spring-boot:run` shows **Email + SMS + Slack** output
+- [ ] `@Import(NotificationMasterConfig.class)` loads **all 3 configs**
+- [ ] `getBean("slackNotificationService")` works
+- [ ] **3 NotificationService beans** detected
 
-**Next: `1.2.3-handle-multiple-configuration-files.md`** - `@Import` multiple `@Configuration` classes!
+**Next: `1.2.4-handle-dependencies-between-beans.md`** - Bean method parameters + `@DependsOn`!
 
-**🎯 Success:** All 3 bean access patterns working on top of pure Java config! 🚀
+**🎯 Success:** Clean modular Java config architecture! 🚀
