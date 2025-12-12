@@ -1,99 +1,175 @@
-# poc-springboot
+# 1.2.1 Define Spring Beans using Java code
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+- Repository: [https://github.com/neutral-00/poc-springboot](https://github.com/neutral-00/poc-springboot)
+- Branch: `1.2.1-define-beans-using-java-code`
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+### Learning Objectives
 
+- [ ] Define Spring Beans using Java code (`@Configuration` + `@Bean`)
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+**Scenario:** Build notification services (Email + SMS) configured **purely** via Java config. No `@Component` annotations - only `@Configuration` + `@Bean`.
 
+## Step 1: Domain & Service Interfaces
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+```java
+// com.lousing.poc.service.NotificationService.java
+package com.lousing.poc.service;
 
+public interface NotificationService {
+    void send(String message, String recipient);
+}
+```
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+## Step 2: Service Implementations (Plain POJOs)
 
+```java
+// com.lousing.poc.service.EmailNotificationService.java
+package com.lousing.poc.service;
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+public class EmailNotificationService implements NotificationService {
+    @Override
+    public void send(String message, String recipient) {
+        System.out.println("📧 Email to " + recipient + ": " + message);
+    }
+}
+```
 
+```java
+// com.lousing.poc.service.SmsNotificationService.java
+package com.lousing.poc.service;
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+public class SmsNotificationService implements NotificationService {
+    @Override
+    public void send(String message, String recipient) {
+        System.out.println("📱 SMS to " + recipient + ": " + message);
+    }
+}
+```
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+## Step 3: Java Configuration (Bean Factory)
+
+```java
+// com.lousing.poc.config.NotificationConfig.java
+package com.lousing.poc.config;
+
+import com.lousing.poc.service.EmailNotificationService;
+import com.lousing.poc.service.NotificationService;
+import com.lousing.poc.service.SmsNotificationService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration  // Spring: "This is a bean factory"
+public class NotificationConfig {
+
+    // Bean 1: Email service (bean name = "emailNotificationService")
+    @Bean
+    public NotificationService emailNotificationService() {
+        return new EmailNotificationService();
+    }
+
+    // Bean 2: SMS service (bean name = "smsNotificationService")
+    @Bean
+    public NotificationService smsNotificationService() {
+        return new SmsNotificationService();
+    }
+}
+```
+
+## Step 4: Spring Boot Application
+
+```java
+// com.lousing.poc.PocSpringbootApplication.java
+package com.lousing.poc;
+
+import com.lousing.poc.config.NotificationConfig;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+
+@SpringBootApplication
+@Import(NotificationConfig.class)  // Load our Java config
+public class PocSpringbootApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(PocSpringbootApplication.class, args);
+        System.out.println("✅ Beans configured via Java Config!");
+    }
+}
+```
+
+## Bean Lifecycle (What Spring Does)
+
+```
+1. Spring Boot starts → Scans @Import(NotificationConfig.class)
+2. Calls emailNotificationService() → Creates EmailNotificationService bean
+3. Calls smsNotificationService() → Creates SmsNotificationService bean
+4. Stores in ApplicationContext:
+   ├── emailNotificationService → EmailNotificationService instance
+   └── smsNotificationService → SmsNotificationService instance ✅
+```
+
+## Verification (Run & Check)
+
+```bash
+mvn spring-boot:run
+```
+
+**Expected Output:**
+
+```
+✅ Beans configured via Java Config!
+Started PocSpringbootApplication in X.XXX seconds
+```
+
+**Spring Container State:**
+
+```
+ApplicationContext Beans:
+├── emailNotificationService (EmailNotificationService)
+├── smsNotificationService (SmsNotificationService)
+└── 20+ Spring Boot auto-config beans
+```
+
+## Key Learning Points
+
+```
+✅ @Configuration = Bean Factory Class
+✅ @Bean method:
+   ├── Method name = Bean name ("emailNotificationService")
+   ├── Return value = Bean instance
+   └── Spring calls method → Manages returned object
+
+✅ @Import loads config into Spring context
+✅ No @Component/@Service needed - Pure Java config!
+```
+
+## File Structure
+
+```
+1.2.1-define-beans-using-java-code/
+├── src/main/java/com/lousing/poc/
+│   ├── PocSpringbootApplication.java      # @Import config
+│   ├── service/
+│   │   ├── NotificationService.java
+│   │   ├── EmailNotificationService.java
+│   │   └── SmsNotificationService.java
+│   └── config/
+│       └── NotificationConfig.java        # @Configuration + @Bean
+└── pom.xml
+```
+
+## Verification Checklist
+
+**✅ Complete when:**
+
+- [ ] 5 files created with exact package structure
+- [ ] `mvn spring-boot:run` starts successfully
+- [ ] `@Import(NotificationConfig.class)` loads beans
+- [ ] No `@Component` annotations used
+- [ ] Beans defined **purely** via `@Bean` methods
+- [ ] Ready as parent for `1.2.2-access-beans-in-application-context`
+
+**Next: `1.2.2-access-beans-in-the-application-context.md`** - Access these beans via `ApplicationContext.getBean()` + `@Autowired`!
+
+**🎯 Foundation ready:** Pure Java config beans defined! Next: Accessing them.
