@@ -1,99 +1,293 @@
-# poc-springboot
+# 1.3.1 Use External Properties to control Configuration
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+- Repository: [https://github.com/neutral-00/poc-springboot](https://github.com/neutral-00/poc-springboot)
+- **Parent Branch:** `main` (bare-bones Spring Boot app)
+- **Branch:** `1.3.1-use-external-properties-to-control-configuration`
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+### Learning Objectives
 
+- [ ] Use External Properties to control Configuration (`@Value`, `@ConfigurationProperties`)
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+**Scenario:** Build a **configurable notification gateway** that reads **API keys, endpoints, and feature flags** from external `application.properties` / `application.yml`. Switch between **Dev, Prod, and Test** environments without code changes.
 
+## Step 1: Create External Properties Files
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+**application.properties (Default - Development):**
 
+```properties
+# com/lousing/poc/config/application.properties
+app.name=Poc Spring Boot
+notification.enabled=true
+notification.email.api-key=dev-email-key-123
+notification.email.endpoint=http://localhost:2525
+notification.sms.enabled=false
+notification.slack.enabled=true
+notification.slack.webhook=https://hooks.slack.com/dev/abc123
+logging.level.com.lousing.poc=DEBUG
+```
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+**application-prod.properties (Production):**
 
+```properties
+app.name=Production Notification Gateway
+notification.enabled=true
+notification.email.api-key=prod-email-key-xyz789
+notification.email.endpoint=https://api.email-prod.com
+notification.sms.enabled=true
+notification.sms.api-key=prod-sms-key-456
+notification.slack.enabled=true
+notification.slack.webhook=https://hooks.slack.com/prod/def456
+logging.level.com.lousing.poc=INFO
+```
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+## Step 2: Configuration Properties POJO
 
+```java
+// com.lousing.poc.config.NotificationProperties.java (NEW)
+package com.lousing.poc.config;
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+@Component
+@ConfigurationProperties(prefix = "notification")  // Maps notification.* properties
+public class NotificationProperties {
+    private boolean enabled = true;
+    private Email email = new Email();
+    private Sms sms = new Sms();
+    private Slack slack = new Slack();
+
+    // Getters/Setters
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public Email getEmail() { return email; }
+    public void setEmail(Email email) { this.email = email; }
+
+    public Sms getSms() { return sms; }
+    public void setSms(Sms sms) { this.sms = sms; }
+
+    public Slack getSlack() { return slack; }
+    public void setSlack(Slack slack) { this.slack = slack; }
+
+    // Nested configuration classes
+    public static class Email {
+        private String apiKey = "";
+        private String endpoint = "";
+
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+
+        public String getEndpoint() { return endpoint; }
+        public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
+    }
+
+    public static class Sms {
+        private boolean enabled = false;
+        private String apiKey = "";
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+        public String getApiKey() { return apiKey; }
+        public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+    }
+
+    public static class Slack {
+        private boolean enabled = false;
+        private String webhook = "";
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+        public String getWebhook() { return webhook; }
+        public void setWebhook(String webhook) { this.webhook = webhook; }
+    }
+}
+```
+
+## Step 3: Properties Consumer Service
+
+```java
+// com.lousing.poc.service.PropertiesDemoService.java (NEW)
+package com.lousing.poc.service;
+
+import com.lousing.poc.config.NotificationProperties;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PropertiesDemoService {
+
+    // ✅ WAY 1: @Value for individual properties
+    @Value("${app.name:Default App}")
+    private String appName;
+
+    // ✅ WAY 2: @ConfigurationProperties POJO (preferred for complex config)
+    private final NotificationProperties config;
+
+    public PropertiesDemoService(NotificationProperties config) {
+        this.config = config;
+    }
+
+    public void demoConfiguration() {
+        System.out.println("\n🚀 === EXTERNAL PROPERTIES DEMO ===");
+        System.out.println("📱 App: " + appName);
+        System.out.println("🔧 Config enabled: " + config.isEnabled());
+
+        System.out.println("\n📧 Email Config:");
+        System.out.println("   API Key: " + config.getEmail().getApiKey());
+        System.out.println("   Endpoint: " + config.getEmail().getEndpoint());
+
+        System.out.println("\n📱 SMS Config: " + (config.getSms().isEnabled() ? "✅" : "❌"));
+        if (config.getSms().isEnabled()) {
+            System.out.println("   API Key: " + config.getSms().getApiKey());
+        }
+
+        System.out.println("\n💬 Slack Config: " + (config.getSlack().isEnabled() ? "✅" : "❌"));
+        System.out.println("   Webhook: " + config.getSlack().getWebhook());
+    }
+}
+```
+
+## Step 4: Demo Runner
+
+```java
+// com.lousing.poc.PropertiesDemoRunner.java (NEW)
+package com.lousing.poc;
+
+import com.lousing.poc.service.PropertiesDemoService;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PropertiesDemoRunner implements CommandLineRunner {
+
+    private final PropertiesDemoService demoService;
+
+    public PropertiesDemoRunner(PropertiesDemoService demoService) {
+        this.demoService = demoService;
+    }
+
+    @Override
+    public void run(String... args) {
+        demoService.demoConfiguration();
+        System.out.println("\n✅ External properties loaded successfully!");
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+## Step 5: Updated Main Application
+
+```java
+// com.lousing.poc.PocSpringbootApplication.java (UPDATED)
+package com.lousing.poc;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class PocSpringbootApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(PocSpringbootApplication.class, args);
+        System.out.println("✅ Properties & Profiles Ready!");
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+## Expected Output (Development)
+
+```bash
+mvn spring-boot:run
+```
+
+```
+✅ Properties & Profiles Ready!
+----------------------------------
+
+🚀 === EXTERNAL PROPERTIES DEMO ===
+📱 App: Poc Spring Boot
+🔧 Config enabled: true
+
+📧 Email Config:
+   API Key: dev-email-key-123
+   Endpoint: http://localhost:2525
+
+📱 SMS Config: ❌
+
+💬 Slack Config: ✅
+   Webhook: https://hooks.slack.com/dev/abc123
+
+✅ External properties loaded successfully!
+----------------------------------
+```
+
+## Test Production Profile
+
+```bash
+mvn spring-boot:run -Dspring.profiles.active=prod
+```
+Or in Intellij, edit run configuration, under `Build and Run > Program arguments`, add:`--spring.profiles.active=prod`
+```
+📧 Email Config:
+   API Key: prod-email-key-xyz789
+   Endpoint: https://api.email-prod.com
+
+📱 SMS Config: ✅
+   API Key: prod-sms-key-456
+```
+
+## Property Sources Priority (Spring Boot Order)
+
+```
+1. Command line: --notification.email.api-key=override
+2. SPRING_PROFILES_ACTIVE=prod → application-prod.properties
+3. application.properties (default)
+4. @ConfigurationProperties class
+5. Code defaults
+```
+
+## Key Learning Points
+
+```
+✅ @Value("${property.name:default}") → Single properties
+✅ @ConfigurationProperties(prefix="notification") → Complex nested config
+✅ application-{profile}.properties → Environment-specific
+✅ -Dspring.profiles.active=prod → Runtime profile selection
+✅ Nested objects auto-mapped: notification.email.api-key → config.email.apiKey
+```
+
+## File Structure (Branch 1.3.1)
+
+```
+1.3.1-use-external-properties-to-control-configuration/
+├── src/main/java/com/lousing/poc/
+│   ├── PocSpringbootApplication.java      # Main app
+│   ├── PropertiesDemoRunner.java          # NEW
+│   ├── service/
+│   │   └── PropertiesDemoService.java     # NEW
+│   └── config/
+│       └── NotificationProperties.java    # NEW
+├── src/main/resources/
+│   ├── application.properties             # NEW - Dev
+│   └── application-prod.properties        # NEW - Prod
+└── pom.xml
+```
+
+## Verification Checklist
+
+**✅ Complete when:**
+
+- [ ] **2 properties files** + **NotificationProperties** POJO created
+- [ ] `@Value` and `@ConfigurationProperties` both working
+- [ ] `mvn spring-boot:run -Dspring.profiles.active=prod` switches config
+- [ ] **Nested properties** map correctly (`notification.slack.webhook`)
+- [ ] **Feature flags** toggle services (`notification.sms.enabled=false`)
+
+**Next: `1.3.2-demonstrate-purpose-of-profiles.md`** - Deep dive into Spring Profiles!
+
+**🎯 Success:** Externalized configuration with zero code changes! 🚀
