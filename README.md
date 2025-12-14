@@ -1,99 +1,147 @@
-# poc-springboot
+# 1.3.3 Use the Spring Expression Language (SpEL)
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
+- Repository: [https://github.com/neutral-00/poc-springboot](https://github.com/neutral-00/poc-springboot)
+- **Parent Branch:** `main` (bare-bones Spring Boot app)
+- **Branch:** `1.3.3-use-spring-expression-language-spel`
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+## 🎯 Learning Objectives
+- [ ] Use Spring Expression Language (SpEL) (`#{...}` dynamic expressions)
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+**Scenario:** Pure SpEL demo - **no services, no interfaces**. Just **@Value("#{expressions}")** showing dynamic runtime evaluation.
 
+## Step 1: Simple SpEL Properties
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+```properties
+# src/main/resources/application.properties (NEW)
+spring.profiles.active=dev
+```
 
+## Step 2: Pure SpEL Demo
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+```java
+// com.lousing.poc.SpelDemoRunner.java (NEW)
+package com.lousing.poc;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+@Component
+public class SpelDemoRunner implements CommandLineRunner {
 
+    // 🔥 PURE SpEL - No services, no complexity!
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+    // ⚠️ WARNING: below will read JVM property, so start your app with `java -Dspring.profiles.active=dev -jar app.jar`
+    // when run with intellij or mvn spring-boot:run it will default to 'default'
+    // it will ignore application.properties settings
+    @Value("#{T(System).getProperty('spring.profiles.active', 'default')}")
+    private String activeProfile;
 
+    @Value("#{T(java.lang.System).getenv('USER') ?: T(java.lang.System).getProperty('user.name')}")
+    private String currentUser;
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+    @Value("#{T(java.lang.Math).random() * 1000}")
+    private double randomValue;
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+    @Value("#{T(java.time.LocalDateTime).now().getHour() >= 9 && T(java.time.LocalDateTime).now().getHour() <= 17 ? 'BUSINESS_HOURS' : 'OFF_HOURS'}")
+    private String businessHours;
+
+    @Value("#{T(java.lang.Runtime).getRuntime().availableProcessors()}")
+    private int cpuCount;
+
+    @Value("#{T(java.lang.Math).PI}")
+    private double piValue;
+
+    @Value("#{T(java.time.LocalDate).now().getDayOfMonth()}")
+    private int dayOfMonth;
+
+    @Override
+    public void run(String... args) {
+        System.out.println("\n🚀 === PURE SpEL DEMO ===\n");
+
+        System.out.println("👤 Active Profile: " + activeProfile);
+        System.out.println("🙍 Current User:   " + currentUser);
+        System.out.println("🎲 Random Value:  " + String.format("%.0f", randomValue));
+        System.out.println("⏰ Business Hours: " + businessHours);
+        System.out.println("💻 CPU Cores:     " + cpuCount);
+        System.out.println("📊 π Value:       " + String.format("%.4f", piValue));
+        System.out.println("📅 Day of Month:  " + dayOfMonth);
+
+        System.out.println("\n✅ SpEL mastery complete!");
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+## Step 3: Updated Main Application
+
+```java
+// com.lousing.poc.PocSpringbootApplication.java (UPDATED)
+package com.lousing.poc;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
+
+@SpringBootApplication
+public class PocSpringbootApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(PocSpringbootApplication.class, args);
+        System.out.println("✅ Pure SpEL Ready!");
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+## Expected Output
+
+```
+✅ Pure SpEL Ready!
+----------------------------------
+
+🚀 === PURE SpEL DEMO ===
+
+👤 Active Profile: default
+🎲 Random Value:  742
+⏰ Business Hours: BUSINESS_HOURS
+💻 CPU Cores:     8
+📊 π Value:       3.1416
+📅 Day of Month:  14
+
+✅ SpEL mastery complete!
+----------------------------------
+```
+
+## SpEL Syntax Cheat Sheet
+
+| Type | Expression | Example Output |
+|------|------------|----------------|
+| **Property** | `#{T(System).getProperty('name')}` | `default` |
+| **Random** | `#{T(Math).random() * 1000}` | `742.123` |
+| **Static** | `#{T(Math).PI}` | `3.14159` |
+| **Time** | `#{T(LocalDateTime).now()}` | Current time |
+| **Condition** | `#{condition ? 'YES' : 'NO'}` | Dynamic |
+| **Math** | `#{1 + 2 * 3}` | `7` |
+
+## File Structure (3 Files Total!)
+
+```
+1.3.3-use-spring-expression-language-spel/
+├── src/main/resources/
+│   └── application.properties      # NEW
+├── src/main/java/com/lousing/poc/
+│   ├── PocSpringbootApplication.java  # UPDATED
+│   └── SpelDemoRunner.java            # NEW
+```
+
+## Verification Checklist
+
+**✅ Complete when:**
+- [ ] **Random value changes** each run
+- [ ] **Business hours** switches (9AM-5PM)
+- [ ] **π shows 3.1415...**
+- [ ] **CPU cores** matches your machine
+- [ ] **Zero service files** - pure SpEL focus
+
+**🎉 1.3 COMPLETE!** Properties + Profiles + Pure SpEL mastery!
