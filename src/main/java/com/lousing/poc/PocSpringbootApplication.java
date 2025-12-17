@@ -8,6 +8,13 @@ import org.springframework.context.ApplicationContext;
 public class PocSpringbootApplication {
 
 	public static void main(String[] args) {
-        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ Proxy Demo Ready!");
+
+        var service = context.getBean(com.lousing.poc.services.WorkService.class);
+        service.doWork();
+
+        System.out.println("----------------------------------");
 	}
 }
