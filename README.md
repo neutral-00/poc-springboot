@@ -1,99 +1,242 @@
-# poc-springboot
+# 1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+- Repository: https://github.com/neutral-00/poc-springboot
+- **Parent Branch:** `main`
+- **Branch:** `1.5.2-use-beanfactorypostprocessor-and-beanpostprocessor`
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+---
 
+## 🎯 Learning Objectives
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+- [ ] Understand what a `BeanFactoryPostProcessor` does
+- [ ] Understand what a `BeanPostProcessor` does
+- [ ] Observe how they modify bean definitions and bean instances
+- [ ] Implement both processors in a Spring Boot application
+- [ ] See the order in which they run during the lifecycle
 
+---
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+## **Scenario**
 
+Your team wants to understand how Spring allows deep customization of the container itself.  
+Two powerful extension points exist:
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+### ✅ **BeanFactoryPostProcessor**
 
+- Runs **before** any beans are created
+- Allows modifying **bean definitions** (metadata)
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+### ✅ **BeanPostProcessor**
 
+- Runs **after** bean instantiation
+- Allows modifying **bean instances**
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+You will implement both and observe their behavior in the logs.
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+---
+
+# ✅ Step-by-Step Tutorial
+
+---
+
+## **Step 1: Create a new branch**
+
+```bash
+git checkout main
+git pull
+git checkout -b 1.5.2-use-beanfactorypostprocessor-and-beanpostprocessor
+```
+
+---
+
+## **Step 2: Create a simple bean to observe processing**
+
+Create:
+
+```
+com.lousing.poc.beans.SampleBean
+```
+
+```java
+package com.lousing.poc.beans;
+
+import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SampleBean {
+    public SampleBean() {
+        System.out.println("➡️ SampleBean: Constructor called");
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("➡️ SampleBean: init method called");
+    }
+
+    public void sayHello() {
+        System.out.println("👋 Hello from SampleBean");
+    }
+}
+```
+
+---
+
+## **Step 3: Create a BeanFactoryPostProcessor**
+
+Create:
+
+```
+com.lousing.poc.processors.CustomBeanFactoryPostProcessor
+```
+
+```java
+package com.lousing.poc.processors;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CustomBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+            throws BeansException {
+
+        System.out.println("🏗️ BeanFactoryPostProcessor: Modifying bean definitions...");
+
+        BeanDefinition def = beanFactory.getBeanDefinition("sampleBean");
+        def.setDescription("Modified by BeanFactoryPostProcessor");
+    }
+}
+```
+
+### ✅ What this does
+
+- Runs **before** any beans are created
+- Accesses and modifies the **bean definition**
+- Does _not_ touch the actual bean instance
+
+---
+
+## **Step 4: Create a BeanPostProcessor**
+
+Create:
+
+```
+com.lousing.poc.processors.CustomBeanPostProcessor
+```
+
+```java
+package com.lousing.poc.processors;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CustomBeanPostProcessor implements BeanPostProcessor {
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName)
+            throws BeansException {
+
+        if (beanName.equals("sampleBean")) {
+            System.out.println("🔍 BeanPostProcessor BEFORE init: " + beanName);
+        }
+        return bean;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName)
+            throws BeansException {
+
+        if (beanName.equals("sampleBean")) {
+            System.out.println("✅ BeanPostProcessor AFTER init: " + beanName);
+        }
+        return bean;
+    }
+}
+```
+
+### ✅ What this does
+
+- Runs **after** bean instantiation
+- Runs **before and after** initialization
+- Can wrap, replace, or enhance beans (basis for AOP proxies)
+
+---
+
+## **Step 5: Trigger bean creation in your main class**
+
+Modify your main class:
+
+```java
+@SpringBootApplication
+public class PocSpringbootApplication {
+
+    public static void main(String[] args) {
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ BeanFactoryPostProcessor & BeanPostProcessor Demo Ready!");
+
+        var bean = context.getBean(com.lousing.poc.beans.SampleBean.class);
+        bean.sayHello();
+
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+---
+
+## **Step 6: Run the application**
+
+```bash
+mvn spring-boot:run
+```
+
+Expected output (order matters):
+
+```
+🏗️ BeanFactoryPostProcessor: Modifying bean definitions...
+➡️ SampleBean: Constructor called
+🔍 BeanPostProcessor BEFORE init: sampleBean
+✅ BeanPostProcessor AFTER init: sampleBean
+
+✅ BeanFactoryPostProcessor & BeanPostProcessor Demo Ready!
+👋 Hello from SampleBean
+----------------------------------
+```
+
+---
+
+# ✅ Understanding the Difference
+
+| Feature     | BeanFactoryPostProcessor                      | BeanPostProcessor                         |
+| ----------- | --------------------------------------------- | ----------------------------------------- |
+| Runs when   | Before bean creation                          | After bean creation                       |
+| Operates on | Bean **definitions**                          | Bean **instances**                        |
+| Use cases   | Modify metadata, change scope, set properties | Wrap beans, add proxies, enhance behavior |
+| Common in   | Framework-level code                          | AOP, logging, auditing                    |
+
+---
+
+# ✅ Summary
+
+In this tutorial, you learned:
+
+- How to implement a `BeanFactoryPostProcessor`
+- How to implement a `BeanPostProcessor`
+- How they fit into the Spring Bean lifecycle
+- How they differ in purpose and timing
+- How to observe their behavior in a running Spring Boot app
+
+This sets you up perfectly for the next tutorial:
+
+✅ **1.5.3 Explain how Spring proxies add behavior at runtime**
