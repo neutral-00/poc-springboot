@@ -1,99 +1,266 @@
-# poc-springboot
+# 1.6.3 Use AOP Pointcut Expressions
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+- Repository: https://github.com/neutral-00/poc-springboot
+- **Parent Branch:** `main`
+- **Branch:** `1.6.3-use-aop-pointcut-expressions`
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+---
 
+## 🎯 Learning Objectives
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+- [ ] Understand what a pointcut expression is
+- [ ] Learn the most common Spring AOP pointcut patterns
+- [ ] Apply pointcuts to match packages, classes, and method signatures
+- [ ] Reuse pointcuts using `@Pointcut` methods
+- [ ] Observe how pointcuts control where advice is applied
 
+---
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+## **Scenario**
 
+Your team wants to apply logging to:
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+- All service methods
+- Only methods in a specific package
+- Only methods with certain names
+- Only methods with certain arguments
 
+Instead of writing separate advices for each method, you can use **pointcut expressions** to precisely target join points.
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+This tutorial shows how to write and reuse pointcuts in Spring AOP.
 
+---
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+# ✅ Step-by-Step Tutorial
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+---
+
+## **Step 1: Create a new branch**
+
+```bash
+git checkout main
+git pull
+git checkout -b 1.6.3-use-aop-pointcut-expressions
+```
+
+---
+
+## **Step 2: Create a demo service with multiple methods**
+
+Create:
+
+```
+com.lousing.poc.aop2.ProductService
+```
+
+```java
+package com.lousing.poc.aop2;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class ProductService {
+
+    public void addProduct(String name) {
+        System.out.println("📦 Adding product: " + name);
+    }
+
+    public void deleteProduct(int id) {
+        System.out.println("🗑️ Deleting product with ID: " + id);
+    }
+
+    public String findProduct(int id) {
+        return "Product-" + id;
+    }
+}
+```
+
+This gives us multiple method signatures to target with pointcuts.
+
+---
+
+## **Step 3: Create an Aspect with reusable pointcuts**
+
+Create:
+
+```
+com.lousing.poc.aop2.PointcutDemoAspect
+```
+
+```java
+package com.lousing.poc.aop2;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class PointcutDemoAspect {
+
+    // 1️⃣ Match all methods in ProductService
+    @Pointcut("execution(* com.lousing.poc.aop2.ProductService.*(..))")
+    public void allProductMethods() {}
+
+    // 2️⃣ Match only methods starting with 'add'
+    @Pointcut("execution(* com.lousing.poc.aop2.ProductService.add*(..))")
+    public void addMethods() {}
+
+    // 3️⃣ Match any method with an int parameter
+    @Pointcut("args(int,..)")
+    public void intArgumentMethods() {}
+
+    // 4️⃣ Combine pointcuts
+    @Pointcut("allProductMethods() && intArgumentMethods()")
+    public void productMethodsWithIntArgs() {}
+
+    // Advice using pointcut #1
+    @Before("allProductMethods()")
+    public void beforeAll(JoinPoint jp) {
+        System.out.println("🔍 @Before (allProductMethods): " + jp.getSignature().getName());
+    }
+
+    // Advice using pointcut #2
+    @Before("addMethods()")
+    public void beforeAdd(JoinPoint jp) {
+        System.out.println("➕ @Before (addMethods): " + jp.getSignature().getName());
+    }
+
+    // Advice using pointcut #4
+    @Before("productMethodsWithIntArgs()")
+    public void beforeIntMethods(JoinPoint jp) {
+        System.out.println("🔢 @Before (intArgumentMethods): " + jp.getSignature().getName());
+    }
+}
+```
+
+### ✅ What this demonstrates
+
+You now have pointcuts that match:
+
+| Pointcut                      | Matches                         |
+| ----------------------------- | ------------------------------- |
+| `allProductMethods()`         | Any method in ProductService    |
+| `addMethods()`                | Methods starting with `add`     |
+| `intArgumentMethods()`        | Methods with an `int` parameter |
+| `productMethodsWithIntArgs()` | Intersection of the above       |
+
+This shows how pointcuts can be composed and reused.
+
+---
+
+## **Step 4: Trigger the service in your main class**
+
+```java
+@SpringBootApplication
+public class PocSpringbootApplication {
+
+    public static void main(String[] args) {
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ AOP Pointcut Demo Ready!");
+
+        var service = context.getBean(com.lousing.poc.aop2.ProductService.class);
+
+        System.out.println("\n--- addProduct() ---");
+        service.addProduct("Laptop");
+
+        System.out.println("\n--- deleteProduct() ---");
+        service.deleteProduct(42);
+
+        System.out.println("\n--- findProduct() ---");
+        System.out.println(service.findProduct(7));
+
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+---
+
+## **Step 5: Run the application**
+
+```bash
+mvn spring-boot:run
+```
+
+Expected output (simplified):
+
+```
+✅ AOP Pointcut Demo Ready!
+
+--- addProduct() ---
+🔍 @Before (allProductMethods): addProduct
+➕ @Before (addMethods): addProduct
+📦 Adding product: Laptop
+
+--- deleteProduct() ---
+🔍 @Before (allProductMethods): deleteProduct
+🔢 @Before (intArgumentMethods): deleteProduct
+🗑️ Deleting product with ID: 42
+
+--- findProduct() ---
+🔍 @Before (allProductMethods): findProduct
+🔢 @Before (intArgumentMethods): findProduct
+Product-7
+----------------------------------
+```
+
+---
+
+# ✅ Most Useful Pointcut Patterns (Cheat Sheet)
+
+### ✅ Match all methods in a package
+
+```
+execution(* com.lousing.poc.services.*.*(..))
+```
+
+### ✅ Match all methods in a class
+
+```
+execution(* com.lousing.poc.services.OrderService.*(..))
+```
+
+### ✅ Match method by name prefix
+
+```
+execution(* *.save*(..))
+```
+
+### ✅ Match by return type
+
+```
+execution(String com.lousing..*(..))
+```
+
+### ✅ Match by argument types
+
+```
+args(String)
+args(int,..)
+```
+
+### ✅ Match annotated methods
+
+```
+@annotation(org.springframework.transaction.annotation.Transactional)
+```
+
+---
+
+# ✅ Summary
+
+In this tutorial, you learned:
+
+- What pointcut expressions are
+- How to write pointcuts using `execution`, `args`, and name patterns
+- How to reuse pointcuts with `@Pointcut` methods
+- How to combine pointcuts using logical operators
+- How pointcuts control where advice is applied
+
+This sets you up for the final AOP tutorial:
+
+✅ **1.6.4 Explain different types of Advice and when to use them**

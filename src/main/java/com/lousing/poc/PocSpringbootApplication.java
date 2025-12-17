@@ -8,6 +8,21 @@ import org.springframework.context.ApplicationContext;
 public class PocSpringbootApplication {
 
 	public static void main(String[] args) {
-        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ AOP Pointcut Demo Ready!");
+
+        var service = context.getBean(com.lousing.poc.aop2.ProductService.class);
+
+        System.out.println("\n--- addProduct() ---");
+        service.addProduct("Laptop");
+
+        System.out.println("\n--- deleteProduct() ---");
+        service.deleteProduct(42);
+
+        System.out.println("\n--- findProduct() ---");
+        System.out.println(service.findProduct(7));
+
+        System.out.println("----------------------------------");
 	}
 }
