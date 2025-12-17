@@ -1,99 +1,236 @@
-# poc-springboot
+# 1.6.2 Implement and deploy Advices using Spring AOP
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+- Repository: https://github.com/neutral-00/poc-springboot
+- **Parent Branch:** `main`
+- **Branch:** `1.6.2-implement-and-deploy-advices-using-spring-aop`
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+---
 
+## 🎯 Learning Objectives
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+- [ ] Enable Spring AOP in a Spring Boot application
+- [ ] Create an Aspect class
+- [ ] Implement different types of Advice
+- [ ] Apply AOP to a service method
+- [ ] Observe how Advice wraps method execution at runtime
 
+---
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+## **Scenario**
 
+Your team wants to add logging around service methods without modifying the service code.
+This is a perfect use case for AOP:
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+- Log before a method runs
+- Log after it completes
+- Log exceptions
+- Measure execution time
 
+You will create:
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+- A service (`OrderService`)
+- An aspect (`LoggingAspect`)
+- Multiple advices (`@Before`, `@After`, `@AfterReturning`, `@AfterThrowing`, `@Around`)
 
+This will give your team a complete understanding of how Spring AOP works in practice.
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+---
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+# ✅ Step-by-Step Tutorial
+
+---
+
+## **Step 1: Create a new branch**
+
+```bash
+git checkout main
+git pull
+git checkout -b 1.6.2-implement-and-deploy-advices-using-spring-aop
+```
+
+---
+
+## **Step 2: Add the AOP starter (if not already present)**
+
+In most Spring Boot apps, this is already included.
+If not, add to `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-aop</artifactId>
+</dependency>
+```
+
+This enables proxy-based AOP.
+
+---
+
+## **Step 3: Create a service to be intercepted**
+
+Create:
+
+```
+com.lousing.poc.aop.OrderService
+```
+
+```java
+package com.lousing.poc.aop;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class OrderService {
+
+    public String placeOrder(String item) {
+        System.out.println("🛒 OrderService: Placing order for " + item);
+        return "Order placed for " + item;
+    }
+
+    public void failOrder() {
+        System.out.println("❌ OrderService: Simulating failure");
+        throw new RuntimeException("Order failed due to system error");
+    }
+}
+```
+
+---
+
+## **Step 4: Create an Aspect with multiple Advices**
+
+Create:
+
+```
+com.lousing.poc.aop.LoggingAspect
+```
+
+```java
+package com.lousing.poc.aop;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.*;
+import org.springframework.stereotype.Component;
+
+@Aspect
+@Component
+public class LoggingAspect {
+
+    @Before("execution(* com.lousing.poc.aop.OrderService.placeOrder(..))")
+    public void beforeAdvice(JoinPoint jp) {
+        System.out.println("🔍 @Before: Calling method " + jp.getSignature().getName());
+    }
+
+    @After("execution(* com.lousing.poc.aop.OrderService.placeOrder(..))")
+    public void afterAdvice(JoinPoint jp) {
+        System.out.println("✅ @After: Completed method " + jp.getSignature().getName());
+    }
+
+    @AfterReturning(
+            value = "execution(* com.lousing.poc.aop.OrderService.placeOrder(..))",
+            returning = "result")
+    public void afterReturningAdvice(Object result) {
+        System.out.println("🎉 @AfterReturning: Method returned → " + result);
+    }
+
+    @AfterThrowing(
+            value = "execution(* com.lousing.poc.aop.OrderService.failOrder(..))",
+            throwing = "ex")
+    public void afterThrowingAdvice(Exception ex) {
+        System.out.println("💥 @AfterThrowing: Exception caught → " + ex.getMessage());
+    }
+
+    @Around("execution(* com.lousing.poc.aop.OrderService.placeOrder(..))")
+    public Object aroundAdvice(ProceedingJoinPoint pjp) throws Throwable {
+        System.out.println("⏱️ @Around: Before execution");
+        Object result = pjp.proceed();
+        System.out.println("⏱️ @Around: After execution");
+        return result;
+    }
+}
+```
+
+### ✅ What this demonstrates
+
+You now have **five** types of advice:
+
+| Advice Type       | When It Runs                               |
+| ----------------- | ------------------------------------------ |
+| `@Before`         | Before method execution                    |
+| `@After`          | After method finishes (success or failure) |
+| `@AfterReturning` | Only if method returns normally            |
+| `@AfterThrowing`  | Only if method throws an exception         |
+| `@Around`         | Wraps the entire method call               |
+
+---
+
+## **Step 5: Trigger the service in your main class**
+
+```java
+@SpringBootApplication
+public class PocSpringbootApplication {
+
+    public static void main(String[] args) {
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ AOP Advice Demo Ready!");
+
+        var service = context.getBean(com.lousing.poc.aop.OrderService.class);
+
+        System.out.println("\n--- Successful Order ---");
+        service.placeOrder("Laptop");
+
+        System.out.println("\n--- Failed Order ---");
+        try {
+            service.failOrder();
+        } catch (Exception ignored) {}
+
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+---
+
+## **Step 6: Run the application**
+
+```bash
+mvn spring-boot:run
+```
+
+Expected output (simplified):
+
+```
+✅ AOP Advice Demo Ready!
+
+--- Successful Order ---
+⏱️ @Around: Before execution
+🔍 @Before: Calling method placeOrder
+🛒 OrderService: Placing order for Laptop
+🎉 @AfterReturning: Method returned → Order placed for Laptop
+✅ @After: Completed method placeOrder
+⏱️ @Around: After execution
+
+--- Failed Order ---
+❌ OrderService: Simulating failure
+💥 @AfterThrowing: Exception caught → Order failed due to system error
+----------------------------------
+```
+
+---
+
+# ✅ Summary
+
+In this tutorial, you learned:
+
+- How to enable AOP in Spring Boot
+- How to create an Aspect class
+- How to implement all major types of Advice
+- How to intercept service methods at runtime
+- How Spring uses proxies to apply AOP behavior
+
+This sets you up perfectly for the next tutorial:
+
+✅ **1.6.3 Use AOP Pointcut Expressions**

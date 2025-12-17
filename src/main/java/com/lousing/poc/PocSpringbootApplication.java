@@ -8,6 +8,20 @@ import org.springframework.context.ApplicationContext;
 public class PocSpringbootApplication {
 
 	public static void main(String[] args) {
-        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ AOP Advice Demo Ready!");
+
+        var service = context.getBean(com.lousing.poc.aop.OrderService.class);
+
+        System.out.println("\n--- Successful Order ---");
+        service.placeOrder("Laptop");
+
+        System.out.println("\n--- Failed Order ---");
+        try {
+            service.failOrder();
+        } catch (Exception ignored) {}
+
+        System.out.println("----------------------------------");
 	}
 }
