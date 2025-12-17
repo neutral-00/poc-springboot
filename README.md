@@ -1,99 +1,175 @@
-# poc-springboot
+# 1.4.3 Use @PostConstruct and @PreDestroy
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
+- Repository: [https://github.com/neutral-00/poc-springboot](https://github.com/neutral-00/poc-springboot)
+- **Parent Branch:** `main`
+- **Branch:** `1.4.3-use-postconstruct-and-predestroy`
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+---
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+## 🎯 Learning Objectives
+- [ ] Understand what `@PostConstruct` and `@PreDestroy` do
+- [ ] Add lifecycle callbacks to Spring-managed beans
+- [ ] Observe initialization and destruction behavior in a running Spring Boot application
+- [ ] Understand when to use these annotations and when not to
 
+---
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+## **Scenario**
+Your team wants certain beans to perform setup work after dependency injection is complete (e.g., loading caches, validating configuration) and cleanup work before the application shuts down (e.g., closing connections, flushing buffers).
 
+Spring provides two lifecycle annotations:
+- `@PostConstruct` → runs **after** the bean is created and dependencies are injected
+- `@PreDestroy` → runs **before** the bean is destroyed
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+You will create a bean that logs initialization and cleanup steps so the team can clearly see how these lifecycle hooks behave.
 
+---
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+# ✅ Step-by-Step Tutorial
 
+---
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+## **Step 1: Create a new branch**
 
+```bash
+git checkout main
+git pull
+git checkout -b 1.4.3-use-postconstruct-and-predestroy
+```
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+---
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+## **Step 2: Create a bean that uses @PostConstruct and @PreDestroy**
+
+Create:
+
+```
+com.lousing.poc.services.LifecycleService
+```
+
+```java
+package com.lousing.poc.services;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LifecycleService {
+    public LifecycleService() {
+        System.out.println("\n➡️ LifecycleService: Constructor called");
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("✅ LifecycleService: @PostConstruct initialization logic executed\n");
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        System.out.println("🧹 LifecycleService: @PreDestroy cleanup logic executed");
+    }
+}
+```
+
+### ✅ What’s happening here?
+
+- The constructor runs **first** when the bean is created.
+- `@PostConstruct` runs **after** Spring injects dependencies.
+- `@PreDestroy` runs **when the application context is shutting down**.
+
+---
+
+## **Step 3: Trigger bean creation in the main application**
+
+Modify your main class to retrieve the bean:
+
+```java
+@SpringBootApplication
+public class PocSpringbootApplication {
+
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ Lifecycle Demo Ready!");
+
+        // Force bean retrieval so logs appear immediately
+        context.getBean(LifecycleService.class);
+
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+Spring would create the bean anyway, but retrieving it ensures the logs appear right after startup.
+
+---
+
+## **Step 4: Run the application**
+
+```bash
+mvn spring-boot:run
+```
+
+Expected output:
+
+```
+➡️ LifecycleService: Constructor called
+✅ LifecycleService: @PostConstruct initialization logic executed
+
+✅ Lifecycle Demo Ready!
+----------------------------------
+```
+
+When you stop the application (Ctrl+C):
+
+```
+🧹 LifecycleService: @PreDestroy cleanup logic executed
+```
+
+---
+
+## ✅ Step 5: Understand when to use these annotations
+
+### ✅ Use `@PostConstruct` for:
+- Loading configuration from a file
+- Initializing caches
+- Validating injected dependencies
+- Starting scheduled tasks
+
+### ✅ Use `@PreDestroy` for:
+- Closing database connections
+- Stopping background threads
+- Flushing logs or buffers
+- Releasing external resources
+
+---
+
+## ✅ Step 6: When NOT to use them
+
+### ❌ Avoid in:
+- Prototype-scoped beans (cleanup won’t run)
+- Complex initialization logic (prefer `InitializingBean` or custom init methods)
+- Beans managed outside Spring (annotations won’t work)
+
+### ❌ Avoid heavy work in @PostConstruct
+It slows down application startup.
+
+---
+
+## ✅ Summary
+
+In this tutorial, you learned:
+
+- How `@PostConstruct` and `@PreDestroy` work
+- How Spring manages bean lifecycle callbacks
+- When to use these annotations
+- When to avoid them
+- How to observe initialization and cleanup behavior in a real Spring Boot app
+
+This prepares you for the next topic: **stereotype annotations**, which build on component scanning and bean lifecycle concepts.
+
+---
+
+Ready for **1.4.4 Explain and use “Stereotype” Annotations**?
