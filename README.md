@@ -8,7 +8,7 @@
 ## 🎯 Learning Objectives
 - [ ] Use Spring Expression Language (SpEL) (`#{...}` dynamic expressions)
 
-**Scenario:** Pure SpEL demo - **no services, no interfaces**. Just **@Value("#{expressions}")** showing dynamic runtime evaluation.
+**Scenario:** Pure SpEL demo - **no services, no interfaces**. Just `@Value("#{expressions}")` showing dynamic runtime evaluation.
 
 ## Step 1: Simple SpEL Properties
 
