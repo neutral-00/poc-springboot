@@ -8,6 +8,9 @@ import org.springframework.context.ApplicationContext;
 public class PocSpringbootApplication {
 
 	public static void main(String[] args) {
-        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+        var context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ Bean Creation Order Demo Ready!");
+        System.out.println("----------------------------------");
 	}
 }
