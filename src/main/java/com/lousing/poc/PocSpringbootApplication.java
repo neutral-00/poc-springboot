@@ -9,5 +9,12 @@ public class PocSpringbootApplication {
 
 	public static void main(String[] args) {
         ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ Bean Lifecycle Demo Ready!");
+
+        // Force bean creation logs to appear immediately
+        context.getBean(com.lousing.poc.lifecycle.LifecycleLogger.class);
+
+        System.out.println("----------------------------------");
 	}
 }

@@ -1,99 +1,217 @@
-# poc-springboot
+# 1.5.1 Explain the Spring Bean Lifecycle
 
-This is a Proof of Concept (PoC) project demonstrating a simple Spring Boot application.
-This is the base barebone springboot project generated using Spring Initializr.
+### Project Metadata
+- Repository: https://github.com/neutral-00/poc-springboot
+- **Parent Branch:** `main`
+- **Branch:** `1.5.1-explain-spring-bean-lifecycle`
 
-The concepts will be demonstrated in separate branches.
-The branches will be named in close alignment with the concepts listed in Certified Spring Professional exam syllabus.
+---
 
-## Section 1 – Spring Core
-### Objective 1.1 Introduction to Spring Framework
-### Objective 1.2 Java Configuration
-1.2.1 Define Spring Beans using Java code
-1.2.2 Access Beans in the Application Context
-1.2.3 Handle multiple Configuration files
-1.2.4 Handle Dependencies between Beans
-1.2.5 Explain and define Bean Scopes
-### Objective 1.3 Properties and Profiles
-1.3.1 Use External Properties to control Configuration
-1.3.2 Demonstrate the purpose of Profiles
-1.3.3 Use the Spring Expression Language (SpEL)
-### Objective 1.4 Annotation-Based Configuration and Component Scanning
-1.4.1 Explain and use Annotation-based Configuration
-1.4.2 Discuss Best Practices for Configuration choices
-1.4.3 Use @PostConstruct and @PreDestroy
-1.4.4 Explain and use “Stereotype” Annotations
-### Objective 1.5 Spring Bean Lifecycle
-1.5.1 Explain the Spring Bean Lifecycle
-1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor
-1.5.3 Explain how Spring proxies add behavior at runtime
-1.5.4 Describe how Spring determines bean creation order
-1.5.5 Avoid issues when Injecting beans by type
-### Objective 1.6 Aspect Oriented Programming
-1.6.1 Explain the concepts behind AOP and the problems that it solves
-1.6.2 Implement and deploy Advices using Spring AOP
-1.6.3 Use AOP Pointcut Expressions
-1.6.4 Explain different types of Advice and when to use them
+## 🎯 Learning Objectives
+- [ ] Understand each phase of the Spring Bean lifecycle
+- [ ] Observe lifecycle events in a running Spring Boot application
+- [ ] Learn how Spring manages bean creation, initialization, and destruction
+- [ ] Understand where custom logic can be inserted into the lifecycle
 
+---
 
-## Section 2 – Data Management
-### Objective 2.1 Introduction to Spring JDBC
-2.1.1 Use and configure Spring’s JdbcTemplate
-2.1.2 Execute queries using callbacks to handle result sets
-2.1.3 Handle data access exceptions
-### Objective 2.2 Transaction Management with Spring
-2.2.1 Describe and use Spring Transaction Management
-2.2.2 Configure Transaction Propagation
-2.2.3 Setup Rollback rules
-2.2.4 Use Transactions in Tests
-### Objective 2.3 Spring Boot and Spring Data for Backing Stores
-2.3.1 Implement a Spring JPA application using Spring Boot
-2.3.2 Create Spring Data Repositories for JPA
+## **Scenario**
+Your team wants to understand *exactly* how Spring manages beans behind the scenes.  
+This includes:
 
+- How beans are instantiated
+- How dependencies are injected
+- How initialization callbacks work
+- How destruction callbacks work
+- How the ApplicationContext controls everything
 
-## Section 3 – Spring MVC
-### Objective 3.1 Web Applications with Spring Boot
-3.1.1 Explain how to create a Spring MVC application using Spring Boot
-3.1.2 Describe the basic request processing lifecycle for REST requests
-3.1.3 Create a simple RESTful controller to handle GET requests
-3.1.4 Configure for deployment
-### Objective 3.2 REST Applications
-3.2.1 Create controllers to support the REST endpoints for various verbs
-3.2.2 Utilize RestTemplate to invoke RESTful services
+You will create a bean that logs each lifecycle phase so the team can visually understand the order of events.
 
+---
 
-## Section 4 – Testing
-### Objective 4.1 Testing Spring Applications
-4.1.1 Write tests using JUnit 5
-4.1.2 Write Integration Tests using Spring
-4.1.3 Configure Tests using Spring Profiles
-4.1.4 Extend Spring Tests to work with Databases
-### Objective 4.2 Advanced Testing with Spring Boot and MockMVC
-4.2.1 Enable Spring Boot testing
-4.2.2 Perform integration testing
-4.2.3 Perform MockMVC testing
-4.2.4 Perform slice testing
+# ✅ Step-by-Step Tutorial
 
+---
 
-## Section 5 – Security
-### Objective 5.1 Explain basic security concepts
-### Objective 5.2 Use Spring Security to configure Authentication and Authorization
-### Objective 5.3 Define Method-level Security
+## **Step 1: Create a new branch**
 
+```bash
+git checkout main
+git pull
+git checkout -b 1.5.1-explain-spring-bean-lifecycle
+```
 
-## Section 6 – Spring Boot
-### Objective 6.1 Spring Boot Feature Introduction
-6.1.1 Explain and use Spring Boot features
-6.1.2 Describe Spring Boot dependency management
-### Objective 6.2 Spring Boot Properties and Autoconfiguration
-6.2.1 Describe options for defining and loading properties
-6.2.2 Utilize auto-configuration
-6.2.3 Override default configuration
-### Objective 6.3 Spring Boot Actuator
-6.3.1 Configure Actuator endpoints
-6.3.2 Secure Actuator HTTP endpoints
-6.3.3 Define custom metrics
-6.3.4 Define custom health indicators
+---
 
-## Reference
-https://docs.broadcom.com/doc/vmw-spring-professional-develop-exam-guide
+## **Step 2: Create a bean that logs lifecycle events**
+
+Create:
+
+```
+com.lousing.poc.lifecycle.LifecycleLogger
+```
+
+```java
+package com.lousing.poc.lifecycle;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LifecycleLogger implements InitializingBean, DisposableBean {
+
+    public LifecycleLogger() {
+        System.out.println("➡️ Constructor: Bean instance created");
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        System.out.println("✅ @PostConstruct: Dependencies injected, bean initialized");
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        System.out.println("🔧 InitializingBean.afterPropertiesSet(): Additional initialization logic");
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        System.out.println("🧹 @PreDestroy: Cleanup before bean destruction");
+    }
+
+    @Override
+    public void destroy() {
+        System.out.println("🗑️ DisposableBean.destroy(): Final cleanup logic");
+    }
+}
+```
+
+### ✅ What this demonstrates
+
+You now have **five lifecycle touchpoints**:
+
+| Phase | Trigger | Method |
+|------|---------|--------|
+| Instantiation | Spring creates the bean | Constructor |
+| Dependency Injection | After wiring dependencies | `@PostConstruct` |
+| Initialization | After PostConstruct | `afterPropertiesSet()` |
+| Shutdown Prep | Before context closes | `@PreDestroy` |
+| Final Cleanup | After PreDestroy | `destroy()` |
+
+This gives a complete picture of the lifecycle.
+
+---
+
+## **Step 3: Trigger bean creation in your main class**
+
+Modify your main class:
+
+```java
+@SpringBootApplication
+public class PocSpringbootApplication {
+
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(PocSpringbootApplication.class, args);
+
+        System.out.println("\n✅ Bean Lifecycle Demo Ready!");
+
+        // Force bean creation logs to appear immediately
+        context.getBean(com.lousing.poc.lifecycle.LifecycleLogger.class);
+
+        System.out.println("----------------------------------");
+    }
+}
+```
+
+---
+
+## **Step 4: Run the application**
+
+```bash
+mvn spring-boot:run
+```
+
+Expected output:
+
+```
+➡️ Constructor: Bean instance created
+✅ @PostConstruct: Dependencies injected, bean initialized
+🔧 InitializingBean.afterPropertiesSet(): Additional initialization logic
+
+✅ Bean Lifecycle Demo Ready!
+----------------------------------
+```
+
+When you stop the application:
+
+```
+🧹 @PreDestroy: Cleanup before bean destruction
+🗑️ DisposableBean.destroy(): Final cleanup logic
+```
+
+---
+
+## ✅ Step 5: Understand the Full Spring Bean Lifecycle
+
+Spring’s lifecycle can be summarized in **eight phases**:
+
+### **1. Bean Definition Loading**
+Spring reads classpath, annotations, and configuration classes.
+
+### **2. Bean Instantiation**
+Spring calls the constructor.
+
+### **3. Dependency Injection**
+Spring injects fields, constructors, and setters.
+
+### **4. `@PostConstruct`**
+Runs after dependencies are injected.
+
+### **5. `InitializingBean.afterPropertiesSet()`**
+Optional initialization hook.
+
+### **6. Custom init-method (if configured)**
+Defined via `@Bean(initMethod = "...")`.
+
+### **7. Bean Ready for Use**
+Application can now use the bean.
+
+### **8. Shutdown Phase**
+When the context closes:
+- `@PreDestroy`
+- `DisposableBean.destroy()`
+- Custom destroy-method
+
+---
+
+## ✅ Step 6: When to use each lifecycle hook
+
+### ✅ Use `@PostConstruct`
+For simple initialization logic.
+
+### ✅ Use `InitializingBean.afterPropertiesSet()`
+For framework-level or library-style initialization.
+
+### ✅ Use custom init/destroy methods
+When you want to avoid annotations or interfaces.
+
+### ✅ Use `@PreDestroy`
+For cleanup logic.
+
+---
+
+## ✅ Summary
+
+In this tutorial, you learned:
+
+- The complete Spring Bean lifecycle
+- How Spring instantiates, wires, initializes, and destroys beans
+- How to hook into lifecycle events using annotations and interfaces
+- How to observe lifecycle logs in a real Spring Boot application
+
+This sets the foundation for the next tutorial:
+
+✅ **1.5.2 Use a BeanFactoryPostProcessor and a BeanPostProcessor**
